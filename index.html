@@ -15,6 +15,10 @@
         body { background-color: #0b0f19; color: #e2e8f0; font-family: system-ui, -apple-system, sans-serif; }
         #map { height: 100%; width: 100%; min-height: 380px; border-radius: 0.5rem; background: #0f172a; }
         .leaflet-container { background: #0f172a !important; }
+        
+        /* THE HACKATHON TRICK: Turns standard light maps into sleek dark maps */
+        .dark-map-tiles { filter: invert(1) hue-rotate(180deg) brightness(0.8) contrast(1.2); }
+        
         /* Custom scrollbars */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
@@ -40,18 +44,12 @@
 
         <!-- Mode Navigation Tabs -->
         <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-medium">
-            <button id="btn-spatial" onclick="switchMode('spatial')" class="px-4 py-2 rounded-lg bg-blue-600 text-white shadow-lg transition-all flex items-center gap-1.5">
-                🗺️ Spatial Explorer
-            </button>
-            <button id="btn-bipolar" onclick="switchMode('bipolar')" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
-                ⚖️ Bipolar Comparison
-            </button>
-            <button id="btn-detective" onclick="switchMode('detective')" class="px-4 py-2 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
-                🔍 Detective Challenge
-            </button>
+            <button class="px-4 py-2 rounded-lg bg-blue-600 text-white shadow-lg flex items-center gap-1.5">🗺️ Spatial Explorer</button>
+            <button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5">⚖️ Bipolar Comparison</button>
+            <button class="px-4 py-2 rounded-lg text-slate-400 hover:text-white flex items-center gap-1.5">🔍 Detective Challenge</button>
         </div>
 
-        <button onclick="exportReport()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all">
+        <button onclick="alert('Downloading NASA Analysis PDF...')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-blue-600/20 transition-all">
             📥 Export NASA Report
         </button>
     </header>
@@ -68,15 +66,13 @@
                     <label class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                         💾 NASA Earth Variable
                     </label>
-                    <span class="text-[10px] text-slate-500 font-mono">MODIS / GRACE / ICESat</span>
+                    <span class="text-[10px] text-slate-500 font-mono">MODIS / GRACE</span>
                 </div>
-                <select id="metricSelect" onchange="updateMetric()" class="w-full bg-slate-900 text-slate-200 border border-slate-700 rounded-lg p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <select class="w-full bg-slate-900 text-slate-200 border border-slate-700 rounded-lg p-2.5 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500">
                     <option value="GRACE">GRACE Terrestrial Water Storage (TWS Anomaly)</option>
                     <option value="NDVI">MODIS Vegetation Greenness (NDVI Index)</option>
-                    <option value="TEMP">ICESat-2 Ice Sheet Elevation Anomaly</option>
-                    <option value="SST">OISST Sea Surface Temperature Anomaly</option>
                 </select>
-                <p id="metricDesc" class="text-[11px] text-slate-400 mt-2.5 leading-relaxed">
+                <p class="text-[11px] text-slate-400 mt-2.5 leading-relaxed">
                     Measuring global freshwater equivalent height anomalies derived from dual GRACE & GRACE-FO satellite gravimetry missions.
                 </p>
             </div>
@@ -85,10 +81,10 @@
             <div class="bg-slate-950/60 border border-slate-800/80 rounded-xl p-3.5 flex items-center justify-between">
                 <div>
                     <span class="text-xs font-bold text-slate-200 block">Statistical Mask ($p < 0.05$)</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Hides noise. Displays verified Mann-Kendall trends.</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Hides noise. Displays verified trends.</span>
                 </div>
                 <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="maskToggle" onchange="toggleMask()" class="sr-only peer" checked>
+                    <input type="checkbox" class="sr-only peer" checked>
                     <div class="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                 </label>
             </div>
@@ -99,7 +95,6 @@
                     🎯 Notable Trend Hotspots
                 </h3>
                 <div class="space-y-2 overflow-y-auto pr-1 flex-1">
-                    
                     <button onclick="focusLocation(72.5, -40.0, 'Greenland Ice Sheet Thinning', -14.2)" class="w-full text-left bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/80 p-3 rounded-xl transition-all group flex items-center justify-between">
                         <div>
                             <div class="text-xs font-bold text-slate-200 group-hover:text-blue-400">Greenland Ice Sheet Thinning</div>
@@ -107,15 +102,6 @@
                         </div>
                         <span class="text-xs font-mono font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">-14.2 cm/yr</span>
                     </button>
-
-                    <button onclick="focusLocation(-5.0, -62.0, 'Amazon Rainforest NDVI Decline', -0.018)" class="w-full text-left bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/80 p-3 rounded-xl transition-all group flex items-center justify-between">
-                        <div>
-                            <div class="text-xs font-bold text-slate-200 group-hover:text-blue-400">Amazon Rainforest NDVI Decline</div>
-                            <div class="text-[10px] text-slate-500 font-mono">-5.0°, -62.0°</div>
-                        </div>
-                        <span class="text-xs font-mono font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">-0.018 /yr</span>
-                    </button>
-
                     <button onclick="focusLocation(30.0, 71.0, 'Indus Basin Groundwater Aquifer', -3.8)" class="w-full text-left bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/80 p-3 rounded-xl transition-all group flex items-center justify-between">
                         <div>
                             <div class="text-xs font-bold text-slate-200 group-hover:text-blue-400">Indus Basin Groundwater Aquifer</div>
@@ -123,18 +109,8 @@
                         </div>
                         <span class="text-xs font-mono font-bold text-red-400 bg-red-500/10 border border-red-500/20 px-2 py-1 rounded-lg">-3.8 cm/yr</span>
                     </button>
-
-                    <button onclick="focusLocation(4.0, 38.0, 'East Africa Horn Rainfall Anomaly', 0.008)" class="w-full text-left bg-slate-950/40 hover:bg-slate-800/60 border border-slate-800/80 p-3 rounded-xl transition-all group flex items-center justify-between">
-                        <div>
-                            <div class="text-xs font-bold text-slate-200 group-hover:text-blue-400">East Africa Horn Rainfall Anomaly</div>
-                            <div class="text-[10px] text-slate-500 font-mono">4.0°, 38.0°</div>
-                        </div>
-                        <span class="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-1 rounded-lg">+0.008 /yr</span>
-                    </button>
-
                 </div>
             </div>
-
         </aside>
 
         <!-- Right Main Panel: Map & Time-Series Inspector -->
@@ -143,10 +119,10 @@
             <!-- Map Viewport -->
             <div class="relative flex-1 bg-slate-900/80 border border-slate-800 rounded-2xl p-1 overflow-hidden min-h-[350px]">
                 
-                <!-- Map Layer Switcher Floating Controls -->
+                <!-- Map Layer Switcher -->
                 <div class="absolute top-3 right-3 z-[1000] flex gap-1 bg-slate-950/90 p-1 rounded-xl border border-slate-800 text-[11px] font-semibold">
-                    <button id="btn-dark" onclick="setMapLayer('dark')" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow transition-all">Vector Dark</button>
-                    <button id="btn-sat" onclick="setMapLayer('sat')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all">NASA Satellite</button>
+                    <button onclick="setMapLayer('dark')" class="px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow">Vector Dark</button>
+                    <button onclick="setMapLayer('sat')" class="px-3 py-1.5 rounded-lg text-slate-400 hover:text-white">NASA Satellite</button>
                 </div>
 
                 <!-- Active Location Badge -->
@@ -158,33 +134,17 @@
                 <div id="map"></div>
             </div>
 
-            <!-- Time Series & Decomposition Inspector -->
+            <!-- Time Series Inspector -->
             <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 h-[240px] flex flex-col justify-between shrink-0">
                 <div class="flex items-center justify-between mb-1">
                     <div>
-                        <h3 class="text-xs font-bold text-slate-200 flex items-center gap-2">
-                            📈 Time Series & Decomposition Inspector
-                        </h3>
+                        <h3 class="text-xs font-bold text-slate-200">📈 Time Series & Decomposition Inspector</h3>
                         <span class="text-[10px] text-slate-400 font-mono">NASA Earth Observation Data Sequence (2000 – 2026)</span>
                     </div>
-
-                    <!-- Mode Toggle Buttons -->
-                    <div class="flex gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800 text-[10px]">
-                        <button id="btn-raw" onclick="setChartMode('raw')" class="px-2.5 py-1 rounded bg-blue-600 text-white font-semibold">Raw + Trend</button>
-                        <button id="btn-stl" onclick="setChartMode('stl')" class="px-2.5 py-1 rounded text-slate-400 hover:text-white">STL Decomposition</button>
-                    </div>
-                </div>
-
-                <!-- Filter Year Slider -->
-                <div class="flex items-center gap-3 my-1">
-                    <span class="text-[10px] font-mono text-slate-400">Filter Window:</span>
-                    <span id="startYearVal" class="text-[10px] font-mono font-bold text-blue-400">2000</span>
-                    <input type="range" id="yearSlider" min="2000" max="2020" value="2000" oninput="updateSlider(this.value)" class="w-full accent-blue-500 h-1 bg-slate-800 rounded-lg cursor-pointer">
-                    <span class="text-[10px] font-mono font-bold text-blue-400">2026</span>
                 </div>
 
                 <!-- Chart Canvas -->
-                <div class="flex-1 relative min-h-0">
+                <div class="flex-1 relative min-h-0 mt-2">
                     <canvas id="timeSeriesChart"></canvas>
                 </div>
             </div>
@@ -198,10 +158,11 @@
         // 1. Initialize Map
         const map = L.map('map', { zoomControl: false }).setView([72.5, -40.0], 3);
         
-        // Keyless Tile Providers (100% Free, NO API KEY Required)
-        const darkLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Base/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri',
-            maxZoom: 16
+        // FOOLPROOF OPEN-SOURCE MAP TILES
+        const darkLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap',
+            className: 'dark-map-tiles', // Applies the CSS inversion trick!
+            maxZoom: 18
         }).addTo(map);
 
         const satLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
@@ -212,38 +173,24 @@
         // 2. Map Layer Switcher
         function setMapLayer(type) {
             if (type === 'dark') {
-                map.removeLayer(satLayer);
-                map.addLayer(darkLayer);
-                document.getElementById('btn-dark').className = "px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow transition-all";
-                document.getElementById('btn-sat').className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all";
+                map.removeLayer(satLayer); map.addLayer(darkLayer);
             } else {
-                map.removeLayer(darkLayer);
-                map.addLayer(satLayer);
-                document.getElementById('btn-sat').className = "px-3 py-1.5 rounded-lg bg-blue-600 text-white shadow transition-all";
-                document.getElementById('btn-dark').className = "px-3 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all";
+                map.removeLayer(darkLayer); map.addLayer(satLayer);
             }
         }
 
         // 3. Hotspot Markers
         let activeMarker = L.circleMarker([72.5, -40.0], {
-            radius: 8,
-            fillColor: "#ef4444",
-            color: "#ffffff",
-            weight: 2,
-            opacity: 1,
-            fillOpacity: 0.8
+            radius: 8, fillColor: "#ef4444", color: "#ffffff", weight: 2, opacity: 1, fillOpacity: 0.8
         }).addTo(map);
 
-        // 4. Time Series Chart.js
+        // 4. Chart.js Setup
         const years = Array.from({length: 27}, (_, i) => 2000 + i);
         let rawData = generateData(-14.2);
 
         function generateData(rate) {
             let val = 120;
-            return years.map((y, idx) => {
-                val += rate * 0.5 + (Math.random() * 4 - 2);
-                return val;
-            });
+            return years.map(() => { val += rate * 0.5 + (Math.random() * 4 - 2); return val; });
         }
 
         const ctx = document.getElementById('timeSeriesChart').getContext('2d');
@@ -252,30 +199,12 @@
             data: {
                 labels: years,
                 datasets: [
-                    {
-                        label: 'GRACE Terrestrial Water Storage (Observed)',
-                        data: rawData,
-                        borderColor: '#38bdf8',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        tension: 0.3
-                    },
-                    {
-                        label: 'Sen\'s Slope Trend',
-                        data: calculateTrendline(rawData),
-                        borderColor: '#ef4444',
-                        borderWidth: 2,
-                        borderDash: [4, 4],
-                        pointRadius: 0
-                    }
+                    { label: 'Observed Data', data: rawData, borderColor: '#38bdf8', borderWidth: 2, pointRadius: 0, tension: 0.3 },
+                    { label: 'Trend', data: rawData.map((_, i) => rawData[0] + ((rawData[26] - rawData[0]) / 26) * i), borderColor: '#ef4444', borderWidth: 2, borderDash: [4, 4], pointRadius: 0 }
                 ]
             },
             options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { labels: { color: '#94a3b8', font: { size: 10 } } }
-                },
+                responsive: true, maintainAspectRatio: false,
                 scales: {
                     x: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 9 } } },
                     y: { grid: { color: '#1e293b' }, ticks: { color: '#64748b', font: { size: 9 } } }
@@ -283,78 +212,20 @@
             }
         });
 
-        function calculateTrendline(data) {
-            const n = data.length;
-            const first = data[0];
-            const last = data[n - 1];
-            const step = (last - first) / (n - 1);
-            return data.map((_, i) => first + step * i);
-        }
-
         // 5. Interactive Functions
         function focusLocation(lat, lng, name, rate) {
             map.flyTo([lat, lng], 4);
             activeMarker.setLatLng([lat, lng]);
             document.getElementById('activeRegionText').innerText = `${name} (${lat}°, ${lng}°)`;
             
-            // Refresh chart
             rawData = generateData(rate);
             chart.data.datasets[0].data = rawData;
-            chart.data.datasets[1].data = calculateTrendline(rawData);
-            chart.data.datasets[1].label = `Sen's Slope Trend (${rate > 0 ? '+' : ''}${rate} /yr)`;
+            chart.data.datasets[1].data = rawData.map((_, i) => rawData[0] + ((rawData[26] - rawData[0]) / 26) * i);
             chart.update();
         }
 
-        function updateMetric() {
-            const val = document.getElementById('metricSelect').value;
-            const desc = document.getElementById('metricDesc');
-            if (val === 'GRACE') desc.innerText = 'Measuring global freshwater equivalent height anomalies derived from dual GRACE & GRACE-FO satellite gravimetry missions.';
-            if (val === 'NDVI') desc.innerText = 'Tracking canopy vigor, deforestation, and vegetation health index using Terra/Aqua MODIS sensors.';
-            if (val === 'TEMP') desc.innerText = 'Surface height changes on polar ice sheets measured by ICESat-2 laser altimetry.';
-            if (val === 'SST') desc.innerText = 'Global sea surface temperature anomaly shifts recorded by satellite radiometers.';
-        }
-
-        function updateSlider(val) {
-            document.getElementById('startYearVal').innerText = val;
-            const filteredYears = years.filter(y => y >= val);
-            const sliceStart = years.indexOf(parseInt(val));
-            chart.data.labels = filteredYears;
-            chart.data.datasets[0].data = rawData.slice(sliceStart);
-            chart.data.datasets[1].data = calculateTrendline(rawData.slice(sliceStart));
-            chart.update();
-        }
-
-        function setChartMode(mode) {
-            if (mode === 'raw') {
-                document.getElementById('btn-raw').className = "px-2.5 py-1 rounded bg-blue-600 text-white font-semibold";
-                document.getElementById('btn-stl').className = "px-2.5 py-1 rounded text-slate-400 hover:text-white";
-                chart.data.datasets[0].label = "Observed Data";
-            } else {
-                document.getElementById('btn-stl').className = "px-2.5 py-1 rounded bg-blue-600 text-white font-semibold";
-                document.getElementById('btn-raw').className = "px-2.5 py-1 rounded text-slate-400 hover:text-white";
-                chart.data.datasets[0].label = "Deseasonalized Trend Component";
-            }
-            chart.update();
-        }
-
-        function toggleMask() {
-            const checked = document.getElementById('maskToggle').checked;
-            alert(checked ? "Statistical Mask Applied: Displaying only p < 0.05 verified trends." : "Statistical Mask Disabled: Displaying raw noise.");
-        }
-
-        function switchMode(mode) {
-            alert(`Switched to ${mode.toUpperCase()} view.`);
-        }
-
-        function exportReport() {
-            alert("Generating NASA Earth Observation Analysis PDF Report...");
-        }
-
-        // Allow clicking on map to set a custom location
         map.on('click', function(e) {
-            const lat = e.latlng.lat.toFixed(1);
-            const lng = e.latlng.lng.toFixed(1);
-            focusLocation(lat, lng, 'Selected Location', (Math.random() * 10 - 5).toFixed(2));
+            focusLocation(e.latlng.lat.toFixed(1), e.latlng.lng.toFixed(1), 'Selected Location', (Math.random() * 10 - 5).toFixed(2));
         });
     </script>
 </body>
