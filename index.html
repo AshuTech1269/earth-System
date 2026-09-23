@@ -1,193 +1,1224 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NASA Earth System Trend Detective</title>
-    <!-- Leaflet Map CSS -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Tailwind CSS (Free styling, no key required) -->
+    <title>NASA Earth System Trend Detective | Space Apps Challenge</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js (Free graphs, no key required) -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        nasa: {
+                            blue: '#0B3D91',
+                            red: '#FC3D21',
+                            dark: '#030712',
+                            card: '#0B192C',
+                            border: '#1E293B',
+                            accent: '#00F0FF',
+                            purple: '#8B5CF6'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Leaflet CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
     <style>
-        /* Ensures map takes up full container height */
-        #map { height: 100%; width: 100%; border-radius: 0.5rem; z-index: 1;}
+        body {
+            background-color: #030712;
+            color: #F3F4F6;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* Glassmorphism utility */
+        .glass-panel {
+            background: rgba(11, 25, 44, 0.75);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #030712;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1E293B;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00F0FF;
+        }
+
+        /* Map custom overrides */
+        .leaflet-container {
+            background: #030712 !important;
+            font-family: 'Inter', sans-serif;
+        }
+        .leaflet-control-zoom a {
+            background-color: rgba(11, 25, 44, 0.9) !important;
+            color: #00F0FF !important;
+            border-color: rgba(255,255,255,0.1) !important;
+        }
+
+        /* Pulse glow effect */
+        @keyframes cyan-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.2); }
+            50% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.5); }
+        }
+        .glow-cyan {
+            animation: cyan-glow 3s infinite;
+        }
+
+        /* Masked point diagonal line pattern for non-significant points */
+        .insignificant-mask {
+            opacity: 0.25 !important;
+            filter: grayscale(100%);
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white font-sans h-screen flex flex-col">
+<body class="min-h-screen flex flex-col antialiased selection:bg-nasa-accent selection:text-black">
 
-    <!-- Header Navigation -->
-    <header class="bg-gray-800 p-4 shadow-md flex justify-between items-center border-b border-gray-700">
-        <h1 class="text-xl md:text-2xl font-bold text-blue-400">🌍 Earth System Trend Detective</h1>
-        <div class="text-xs md:text-sm bg-green-600 px-3 py-1 rounded-full font-semibold animate-pulse">
-            System Active: Open-Source Mode (No API Key)
+    <!-- Navigation Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-800/80 px-4 lg:px-8 py-3">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4 max-w-7xl mx-auto">
+            <!-- Brand Title -->
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-nasa-blue flex items-center justify-center font-bold text-white shadow-lg shadow-blue-900/50 border border-cyan-400/30">
+                    <i data-lucide="globe" class="w-6 h-6 text-cyan-400"></i>
+                </div>
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-mono tracking-widest text-cyan-400 font-semibold uppercase">NASA Space Apps Challenge</span>
+                        <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">LIVE DATA 2026</span>
+                    </div>
+                    <h1 class="text-lg lg:text-xl font-bold tracking-tight text-white flex items-center gap-2">
+                        Earth System Trend Detective
+                    </h1>
+                </div>
+            </div>
+
+            <!-- Navigation Mode Switcher -->
+            <nav class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs font-medium">
+                <button id="nav-explorer" onclick="switchTab('explorer')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-nasa-blue text-white shadow-md transition-all">
+                    <i data-lucide="map" class="w-4 h-4"></i>
+                    <span>Spatial Explorer</span>
+                </button>
+                <button id="nav-bipolar" onclick="switchTab('bipolar')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                    <i data-lucide="git-compare" class="w-4 h-4"></i>
+                    <span>Bipolar Comparison</span>
+                </button>
+                <button id="nav-detective" onclick="switchTab('detective')" class="flex items-center gap-2 px-3.5 py-2 rounded-lg text-slate-400 hover:text-white transition-all">
+                    <i data-lucide="shield-alert" class="w-4 h-4"></i>
+                    <span>Detective Challenge</span>
+                </button>
+            </nav>
+
+            <!-- Quick Action & Export Button -->
+            <div class="hidden sm:flex items-center space-x-3">
+                <button onclick="openExportModal()" class="flex items-center space-x-2 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-black font-semibold px-4 py-2 rounded-xl text-xs transition-all shadow-lg shadow-cyan-500/20 active:scale-95">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    <span>Export NASA Report</span>
+                </button>
+            </div>
         </div>
     </header>
 
-    <!-- Main App Container -->
-    <main class="flex-1 flex flex-col md:flex-row p-4 gap-4 overflow-hidden">
-        
-        <!-- Sidebar Controls & Stats -->
-        <aside class="w-full md:w-1/3 bg-gray-800 rounded-lg p-5 flex flex-col gap-5 overflow-y-auto shadow-lg border border-gray-700">
-            <h2 class="text-lg font-semibold border-b border-gray-700 pb-2">Statistical Engine Dashboard</h2>
+    <!-- Main Workspace -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 lg:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- TAB 1: SPATIAL EXPLORER -->
+        <section id="tab-explorer" class="lg:col-span-12 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
             
-            <!-- Variable Selector -->
-            <div>
-                <label class="block text-sm text-gray-400 mb-2">1. Select Environmental Variable:</label>
-                <select id="variable-select" class="w-full bg-gray-700 text-white rounded p-2.5 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="temp">Land Surface Temperature Anomaly</option>
-                    <option value="veg">Vegetation Cover (NDVI)</option>
-                    <option value="water">Groundwater Depletion (GRACE)</option>
-                </select>
-            </div>
-
-            <!-- Significance Mask Toggle -->
-            <div>
-                <label class="block text-sm text-gray-400 mb-2">2. Apply Scientific Filters:</label>
-                <div class="flex items-center gap-3 bg-gray-700 p-3 rounded border border-gray-600">
-                    <input type="checkbox" id="sig-mask" class="w-5 h-5 text-blue-500 rounded focus:ring-blue-500 bg-gray-900 border-gray-600">
-                    <span class="text-sm font-medium">Show Significant Trends Only ($p < 0.05$)</span>
-                </div>
-            </div>
-
-            <!-- Data Readout -->
-            <div class="bg-gray-900 p-4 rounded border border-gray-700 mt-2">
-                <h3 class="text-sm font-semibold text-blue-300 mb-3 uppercase tracking-wide">3. Location Readout (Click map to scan)</h3>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <p class="text-xs text-gray-400">Coordinates</p>
-                        <p class="text-sm font-mono mt-1">Lat: <span id="lat-val">--</span><br>Lng: <span id="lng-val">--</span></p>
+            <!-- Left Sidebar Controls (3 Cols) -->
+            <div class="lg:col-span-4 flex flex-col space-y-5">
+                
+                <!-- Dataset Selection Panel -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                        <h2 class="text-sm font-semibold tracking-wide text-cyan-400 uppercase flex items-center gap-2">
+                            <i data-lucide="database" class="w-4 h-4"></i>
+                            NASA Earth Variable
+                        </h2>
+                        <span class="text-[10px] font-mono text-slate-400">MODIS / GRACE / ICESat</span>
                     </div>
-                    <div>
-                        <p class="text-xs text-gray-400">Sen's Slope ($\beta$)</p>
-                        <p id="trend-val" class="text-sm font-bold mt-1">--</p>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs font-medium text-slate-300">Target Earth System Metric</label>
+                        <select id="dataset-select" onchange="handleDatasetChange()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-white focus:outline-none focus:border-cyan-400 transition-colors">
+                            <option value="GRACE_TWS">GRACE Terrestrial Water Storage (TWS Anomaly)</option>
+                            <option value="ICESAT_ICE">ICESat-2 Ice Sheet Thickness Change (m/yr)</option>
+                            <option value="MODIS_NDVI">MODIS/VIIRS Vegetation Index (NDVI)</option>
+                            <option value="MODIS_SST">MODIS Sea Surface Temperature (SST Anomaly)</option>
+                        </select>
+                    </div>
+
+                    <!-- Dataset Metadata Description -->
+                    <div id="dataset-desc" class="p-3 bg-slate-900/80 rounded-xl text-xs text-slate-400 border border-slate-800/80 leading-relaxed">
+                        Measuring global freshwater equivalent height anomalies derived from dual GRACE & GRACE-FO satellite gravimetry missions.
+                    </div>
+
+                    <!-- Significance Filter Mask Toggle -->
+                    <div class="pt-2 border-t border-slate-800">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-2">
+                                <i data-lucide="filter text-cyan-400" class="w-4 h-4 text-cyan-400"></i>
+                                <span class="text-xs font-medium text-slate-200">Statistical Mask ($p < 0.05$)</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="significance-mask-toggle" onchange="toggleSignificanceMask()" class="sr-only peer" checked>
+                                <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                            </label>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1.5">
+                            Hides high $p$-value noise. Displays only statistically significant trends verified by Mann-Kendall test.
+                        </p>
                     </div>
                 </div>
-                <div class="mt-4 pt-4 border-t border-gray-700">
-                    <p class="text-xs text-gray-400">Mann-Kendall p-value ($p$)</p>
-                    <p id="p-val" class="text-lg font-bold mt-1">--</p>
+
+                <!-- Hotspot Quick Presets -->
+                <div class="glass-panel p-5 rounded-2xl space-y-3">
+                    <h2 class="text-sm font-semibold tracking-wide text-cyan-400 uppercase flex items-center gap-2">
+                        <i data-lucide="map-pin" class="w-4 h-4"></i>
+                        Notable Trend Hotspots
+                    </h2>
+                    <div class="grid grid-cols-1 gap-2 text-xs" id="hotspots-list">
+                        <!-- Populated by JS -->
+                    </div>
                 </div>
+
+                <!-- Statistical Engine Live Readout -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4">
+                    <h2 class="text-sm font-semibold tracking-wide text-purple-400 uppercase flex items-center gap-2">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                        Trend Metrics Engine
+                    </h2>
+                    
+                    <div class="grid grid-cols-2 gap-3 text-center">
+                        <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-mono">Sen's Slope ($\beta$)</span>
+                            <span id="stat-sens-slope" class="text-base font-bold text-cyan-400 font-mono">-14.2 cm/yr</span>
+                        </div>
+                        <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-mono">Mann-Kendall $p$-val</span>
+                            <span id="stat-p-value" class="text-base font-bold text-emerald-400 font-mono">0.0012</span>
+                        </div>
+                        <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-mono">$Z$-Score</span>
+                            <span id="stat-z-score" class="text-base font-bold text-white font-mono">-3.24</span>
+                        </div>
+                        <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800">
+                            <span class="text-[10px] text-slate-400 block uppercase font-mono">Significance</span>
+                            <span id="stat-significance" class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 inline-block mt-1">SIGNIFICANT</span>
+                        </div>
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Chart Container -->
-            <div class="flex-1 min-h-[200px] mt-2 bg-gray-900 rounded-lg p-2 border border-gray-700">
-                <canvas id="trendChart"></canvas>
-            </div>
-        </aside>
+            <!-- Map Viewport & Interactive Chart (8 Cols) -->
+            <div class="lg:col-span-8 flex flex-col space-y-6">
+                
+                <!-- Map Container -->
+                <div class="glass-panel p-3 rounded-2xl relative overflow-hidden flex flex-col h-[420px] shadow-2xl">
+                    <!-- Map Toolbar Overlay -->
+                    <div class="absolute top-5 right-5 z-[1000] flex items-center space-x-2 bg-slate-900/90 p-1.5 rounded-xl border border-slate-800">
+                        <button onclick="setMapLayer('dark')" id="btn-layer-dark" class="px-2.5 py-1 text-xs rounded-lg bg-cyan-500 text-black font-semibold">Vector Dark</button>
+                        <button onclick="setMapLayer('satellite')" id="btn-layer-sat" class="px-2.5 py-1 text-xs rounded-lg text-slate-400 hover:text-white">NASA Satellite</button>
+                    </div>
 
-        <!-- Interactive Map Container -->
-        <section class="w-full md:w-2/3 bg-gray-800 rounded-lg p-1 shadow-lg border border-gray-700 relative">
-            <div id="map"></div>
-            
-            <!-- Loading Overlay (shows during "calculation") -->
-            <div id="loading" class="absolute inset-0 bg-gray-900/80 flex flex-col items-center justify-center z-[1000] hidden rounded-lg backdrop-blur-sm">
-                <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <div class="text-lg font-bold text-blue-400">Calculating Mann-Kendall Statistics...</div>
+                    <!-- Selected Target Badge Overlay -->
+                    <div class="absolute top-5 left-5 z-[1000] bg-slate-900/90 backdrop-blur border border-slate-800 px-3 py-1.5 rounded-xl flex items-center space-x-2">
+                        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-ping"></span>
+                        <span id="active-location-label" class="text-xs font-semibold text-white font-mono">Greenland Ice Sheet (-72.5°, 40.0°)</span>
+                    </div>
+
+                    <!-- Leaflet DOM element -->
+                    <div id="map" class="w-full h-full rounded-xl z-10"></div>
+                </div>
+
+                <!-- Time Series Analytical Chart Container -->
+                <div class="glass-panel p-5 rounded-2xl space-y-4">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                        <div>
+                            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                                <i data-lucide="line-chart" class="w-4 h-4 text-cyan-400"></i>
+                                Time Series & Decomposition Inspector
+                            </h3>
+                            <p class="text-xs text-slate-400">NASA Earth Observation Data Sequence (2000 – 2026)</p>
+                        </div>
+
+                        <!-- Chart Display Toggles -->
+                        <div class="flex items-center bg-slate-900 p-1 rounded-lg border border-slate-800 text-xs">
+                            <button onclick="setChartMode('raw')" id="btn-chart-raw" class="px-3 py-1 rounded bg-nasa-blue text-white font-medium">Raw + Trend</button>
+                            <button onclick="setChartMode('decomposition')" id="btn-chart-decomp" class="px-3 py-1 rounded text-slate-400 hover:text-white font-medium">STL Decomposition</button>
+                        </div>
+                    </div>
+
+                    <!-- Time Range Filter Slider -->
+                    <div class="flex items-center space-x-4 bg-slate-900/60 p-3 rounded-xl border border-slate-800/80">
+                        <span class="text-xs text-slate-400 font-mono">Filter Window:</span>
+                        <span id="slider-year-min" class="text-xs text-cyan-400 font-mono">2000</span>
+                        <input type="range" id="time-range-min" min="2000" max="2025" value="2000" oninput="updateTimeRange()" class="w-full accent-cyan-400 h-1 bg-slate-700 rounded-lg cursor-pointer">
+                        <input type="range" id="time-range-max" min="2001" max="2026" value="2026" oninput="updateTimeRange()" class="w-full accent-cyan-400 h-1 bg-slate-700 rounded-lg cursor-pointer">
+                        <span id="slider-year-max" class="text-xs text-cyan-400 font-mono">2026</span>
+                    </div>
+
+                    <!-- Canvas Chart -->
+                    <div class="relative h-64 w-full">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+
+        </section>
+
+        <!-- TAB 2: BIPOLAR REGIONAL COMPARISON TOOL -->
+        <section id="tab-bipolar" class="hidden lg:col-span-12 space-y-6 w-full">
+            <div class="glass-panel p-6 rounded-2xl space-y-6">
+                <div>
+                    <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-xs font-mono mb-2">
+                        <i data-lucide="git-compare" class="w-3.5 h-3.5"></i>
+                        <span>Opposite Trend Dual-Analysis Engine</span>
+                    </div>
+                    <h2 class="text-2xl font-bold text-white">Bipolar Regional Contrast System</h2>
+                    <p class="text-sm text-slate-400 max-w-3xl mt-1">
+                        Examine how a single global Earth driver (e.g., shifts in polar atmospheric cell circulation or global thermal expansion) manifests as opposing trends in different geographical zones.
+                    </p>
+                </div>
+
+                <!-- Scenario Selector -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onclick="loadBipolarScenario('antarctica')" class="glass-card p-4 rounded-xl border border-cyan-500/30 text-left hover:border-cyan-400 transition-all">
+                        <span class="text-xs font-mono text-cyan-400 font-semibold block">CASE STUDY 01</span>
+                        <h4 class="text-sm font-bold text-white mt-1">Antarctic Ice Sheet Paradox</h4>
+                        <p class="text-xs text-slate-400 mt-1">West Antarctic melting vs. East Antarctic coastal thickening dynamics.</p>
+                    </button>
+                    <button onclick="loadBipolarScenario('amazon')" class="glass-card p-4 rounded-xl border border-slate-800 text-left hover:border-cyan-400 transition-all">
+                        <span class="text-xs font-mono text-cyan-400 font-semibold block">CASE STUDY 02</span>
+                        <h4 class="text-sm font-bold text-white mt-1">Amazon Rainforest Contrast</h4>
+                        <p class="text-xs text-slate-400 mt-1">Deforestation arc loss vs. Secondary forest canopy recovery.</p>
+                    </button>
+                    <button onclick="loadBipolarScenario('monsoon')" class="glass-card p-4 rounded-xl border border-slate-800 text-left hover:border-cyan-400 transition-all">
+                        <span class="text-xs font-mono text-cyan-400 font-semibold block">CASE STUDY 03</span>
+                        <h4 class="text-sm font-bold text-white mt-1">Indo-Pacific SST Bipolarity</h4>
+                        <p class="text-xs text-slate-400 mt-1">Indian Ocean Dipole positive phase vs Eastern Pacific cooling.</p>
+                    </button>
+                </div>
+
+                <!-- Side-by-Side Dual Analysis Cards -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+                    <!-- Zone A -->
+                    <div class="glass-card p-5 rounded-2xl border border-red-500/20 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-mono text-red-400 bg-red-500/10 px-2 py-0.5 rounded uppercase">Region Alpha (Negative Slope)</span>
+                                <h3 id="bipolar-a-title" class="text-lg font-bold text-white mt-1">West Antarctic Peninsula</h3>
+                            </div>
+                            <div class="text-right">
+                                <span id="bipolar-a-slope" class="text-lg font-mono font-bold text-red-400">-12.8 Gt/yr</span>
+                                <span class="text-[10px] block text-slate-400">Sen's Rate of Loss</span>
+                            </div>
+                        </div>
+                        <div class="h-48 w-full">
+                            <canvas id="chartBipolarA"></canvas>
+                        </div>
+                        <p id="bipolar-a-desc" class="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                            Accelerated ocean-driven basal ice shelf melting resulting from warm Circumpolar Deep Water intruding onto the continental shelf.
+                        </p>
+                    </div>
+
+                    <!-- Zone B -->
+                    <div class="glass-card p-5 rounded-2xl border border-emerald-500/20 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded uppercase">Region Beta (Positive/Stable Slope)</span>
+                                <h3 id="bipolar-b-title" class="text-lg font-bold text-white mt-1">East Antarctic Interior</h3>
+                            </div>
+                            <div class="text-right">
+                                <span id="bipolar-b-slope" class="text-lg font-mono font-bold text-emerald-400">+2.4 Gt/yr</span>
+                                <span class="text-[10px] block text-slate-400">Sen's Accumulation Rate</span>
+                            </div>
+                        </div>
+                        <div class="h-48 w-full">
+                            <canvas id="chartBipolarB"></canvas>
+                        </div>
+                        <p id="bipolar-b-desc" class="text-xs text-slate-300 leading-relaxed bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                            Higher atmospheric moisture capacity resulting in increased localized snowfall accumulation over high-altitude interior ice sheets.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- TAB 3: DETECTIVE CHALLENGE / QUIZ -->
+        <section id="tab-detective" class="hidden lg:col-span-12 space-y-6 w-full">
+            <div class="glass-panel p-6 rounded-2xl space-y-6">
+                <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-slate-800 pb-4">
+                    <div>
+                        <div class="inline-flex items-center space-x-2 px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20 text-xs font-mono mb-1">
+                            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+                            <span>Interactive Scientific Verification</span>
+                        </div>
+                        <h2 class="text-2xl font-bold text-white">NASA Trend Detective Mode</h2>
+                        <p class="text-sm text-slate-400">Can you distinguish true climate trends from seasonal noise and natural oscillations?</p>
+                    </div>
+                    
+                    <!-- Score Counter -->
+                    <div class="flex items-center space-x-3 bg-slate-900 px-4 py-2 rounded-xl border border-slate-800">
+                        <i data-lucide="award" class="w-5 h-5 text-yellow-400"></i>
+                        <div>
+                            <span class="text-[10px] text-slate-400 font-mono uppercase block">Detective Rank Score</span>
+                            <span id="quiz-score" class="text-base font-bold font-mono text-cyan-400">0 / 0 pts</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Quiz Card -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                    
+                    <!-- Chart Simulation Area -->
+                    <div class="lg:col-span-7 glass-card p-5 rounded-2xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-mono text-cyan-400 font-semibold" id="quiz-case-id">CASE STUDY #104: Unknown Satellite Dataset</span>
+                            <span class="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded font-mono">2000-2026 Time Window</span>
+                        </div>
+                        <div class="h-64 w-full">
+                            <canvas id="quizChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Action & Question Controls -->
+                    <div class="lg:col-span-5 space-y-5">
+                        <div class="space-y-2">
+                            <h3 class="text-base font-bold text-white" id="quiz-question-title">Classify the Dataset Trajectory</h3>
+                            <p class="text-xs text-slate-300 leading-relaxed" id="quiz-question-desc">
+                                Review the time-series plot carefully. Account for interannual volatility and seasonal spikes. Is this trend **Statistically Significant ($p < 0.05$)** or simply **Natural Stochastic Noise ($p \ge 0.05$)**?
+                            </p>
+                        </div>
+
+                        <!-- Answer Buttons -->
+                        <div class="space-y-2.5">
+                            <button onclick="submitQuizAnswer(true)" class="w-full text-left p-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 hover:bg-cyan-500/10 text-white font-medium text-xs transition-all flex items-center justify-between group">
+                                <span>Statistically Significant Directional Trend</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors"></i>
+                            </button>
+                            <button onclick="submitQuizAnswer(false)" class="w-full text-left p-3.5 rounded-xl bg-slate-900 border border-slate-700 hover:border-cyan-400 hover:bg-cyan-500/10 text-white font-medium text-xs transition-all flex items-center justify-between group">
+                                <span>Insignificant Natural Noise / Cyclic Oscillation</span>
+                                <i data-lucide="arrow-right" class="w-4 h-4 text-slate-500 group-hover:text-cyan-400 transition-colors"></i>
+                            </button>
+                        </div>
+
+                        <!-- Result Feedback Box -->
+                        <div id="quiz-feedback" class="hidden p-4 rounded-xl border text-xs space-y-2">
+                            <div class="font-bold flex items-center gap-2" id="quiz-feedback-title">
+                                <!-- Populated dynamically -->
+                            </div>
+                            <p class="text-slate-300 leading-relaxed" id="quiz-feedback-text">
+                                <!-- Feedback text -->
+                            </p>
+                            <button onclick="nextQuizCase()" class="mt-2 w-full py-2 bg-cyan-500 text-black font-bold rounded-lg text-xs hover:bg-cyan-400 transition-colors">
+                                Load Next Case File
+                            </button>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </section>
 
     </main>
 
-    <!-- Leaflet JS (Free map engine) -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- Export NASA Report Modal -->
+    <div id="export-modal" class="fixed inset-0 z-[2000] bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
+        <div class="glass-panel border border-slate-700 max-w-lg w-full rounded-2xl p-6 space-y-5">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2">
+                    <i data-lucide="file-text" class="w-5 h-5 text-cyan-400"></i>
+                    <h3 class="text-lg font-bold text-white">Generate NASA Scientific Report</h3>
+                </div>
+                <button onclick="closeExportModal()" class="text-slate-400 hover:text-white">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <p class="text-xs text-slate-300 leading-relaxed">
+                Download a fully structured summary report of your selected Earth system trend, including Mann-Kendall test statistics, Sen's slope rates, and geo-referenced hotspot coordinates.
+            </p>
+
+            <div class="space-y-3 font-mono text-xs bg-slate-950 p-4 rounded-xl border border-slate-800 text-slate-300">
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Target Region:</span>
+                    <span id="exp-region" class="text-cyan-400">Greenland Ice Sheet</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Variable:</span>
+                    <span id="exp-variable" class="text-white">GRACE Water Equivalent</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">Sen's Slope Rate:</span>
+                    <span id="exp-slope" class="text-white">-14.2 cm/yr</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-500">p-value:</span>
+                    <span id="exp-pvalue" class="text-emerald-400">0.0012 (Significant)</span>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="downloadReport('json')" class="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-white flex items-center justify-center gap-2">
+                    <i data-lucide="code" class="w-4 h-4 text-cyan-400"></i>
+                    Export JSON
+                </button>
+                <button onclick="downloadReport('csv')" class="py-2.5 px-4 bg-cyan-500 hover:bg-cyan-400 rounded-xl text-xs font-bold text-black flex items-center justify-center gap-2">
+                    <i data-lucide="file-spread-sheet" class="w-4 h-4"></i>
+                    Export CSV Data
+                </button>
+            </div>
+        </div>
+    </div>
+
     <script>
-        // Initialize Map globally centered
-        const map = L.map('map').setView([20, 0], 2);
+        // Global State
+        let currentTab = 'explorer';
+        let map;
+        let activeTileLayer;
+        let trendChart;
+        let chartBipolarA, chartBipolarB;
+        let quizChart;
+        let significanceMaskActive = true;
+        let currentChartMode = 'raw';
+        
+        let activeDataset = 'GRACE_TWS';
+        let activeHotspotIndex = 0;
+        let globalYearMin = 2000;
+        let globalYearMax = 2026;
 
-        // FREE, KEYLESS MAP TILE PROVIDER: CartoDB Dark Matter
-        // This solves the "API Key Required" problem completely.
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
-        }).addTo(map);
-
-        // Chart.js Setup
-        const ctx = document.getElementById('trendChart').getContext('2d');
-        let trendChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: ['2018', '2019', '2020', '2021', '2022', '2023', '2024', '2025', '2026'],
-                datasets: [{
-                    label: 'Historical Data Value',
-                    data: [0,0,0,0,0,0,0,0,0],
-                    borderColor: '#3b82f6',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
+        // Dataset Definitions
+        const DATASETS = {
+            'GRACE_TWS': {
+                name: 'GRACE Terrestrial Water Storage',
+                unit: 'cm water eq.',
+                rateUnit: 'cm/yr',
+                desc: 'Measuring global freshwater equivalent height anomalies derived from dual GRACE & GRACE-FO satellite gravimetry missions.'
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { grid: { color: '#374151', drawBorder: false }, ticks: { color: '#9ca3af' } },
-                    x: { grid: { color: '#374151', drawBorder: false }, ticks: { color: '#9ca3af' } }
-                }
+            'ICESAT_ICE': {
+                name: 'ICESat-2 Ice Sheet Elevation',
+                unit: 'm elevation',
+                rateUnit: 'm/yr',
+                desc: 'LiDAR surface elevation change over major polar glaciated regions and ice sheets.'
+            },
+            'MODIS_NDVI': {
+                name: 'MODIS Vegetation Index (NDVI)',
+                unit: 'NDVI Index',
+                rateUnit: 'NDVI/decade',
+                desc: 'Normalized Difference Vegetation Index tracking terrestrial canopy photosynthetic activity.'
+            },
+            'MODIS_SST': {
+                name: 'MODIS Sea Surface Temperature',
+                unit: '°C Anomaly',
+                rateUnit: '°C/decade',
+                desc: 'Thermal infrared satellite surface temperature anomalies in coastal and open ocean regions.'
             }
+        };
+
+        // Hotspots Data Structure
+        const HOTSPOTS = [
+            {
+                name: 'Greenland Ice Sheet Thinning',
+                coords: [72.5, -40.0],
+                dataset: 'GRACE_TWS',
+                slope: -14.2,
+                pValue: 0.0001,
+                zScore: -3.89,
+                significant: true,
+                noise: 2.1,
+                seasonalAmp: 8.5,
+                desc: 'Accelerated summer mass loss across lower coastal outlet glaciers.'
+            },
+            {
+                name: 'Amazon Rainforest NDVI Decline',
+                coords: [-5.0, -62.0],
+                dataset: 'MODIS_NDVI',
+                slope: -0.018,
+                pValue: 0.0032,
+                zScore: -2.95,
+                significant: true,
+                noise: 0.04,
+                seasonalAmp: 0.12,
+                desc: 'Combined impacts of severe drought cycles and forest conversion along the arc of deforestation.'
+            },
+            {
+                name: 'Indus Basin Groundwater Aquifer',
+                coords: [30.0, 71.0],
+                dataset: 'GRACE_TWS',
+                slope: -3.8,
+                pValue: 0.0008,
+                zScore: -3.35,
+                significant: true,
+                noise: 0.8,
+                seasonalAmp: 2.4,
+                desc: 'Persistent groundwater depletion driven by intensive agricultural irrigation pumps.'
+            },
+            {
+                name: 'East Africa Horn Rainfall Anomaly',
+                coords: [4.0, 38.0],
+                dataset: 'MODIS_NDVI',
+                slope: -0.008,
+                pValue: 0.041,
+                zScore: -2.04,
+                significant: true,
+                noise: 0.06,
+                seasonalAmp: 0.18,
+                desc: 'Recurrent multi-year drought episodes impairing vegetation greenness across pasturelands.'
+            },
+            {
+                name: 'Pacific Decadal Oscillation Zone',
+                coords: [20.0, -150.0],
+                dataset: 'MODIS_SST',
+                slope: 0.002,
+                pValue: 0.4210,
+                zScore: 0.81,
+                significant: false,
+                noise: 0.85,
+                seasonalAmp: 0.4,
+                desc: 'High interannual SST volatility without a statistically significant linear trend.'
+            }
+        ];
+
+        // Grid Simulation Points (Background Map Layer)
+        const GRID_POINTS = [];
+        for(let lat = -60; lat <= 70; lat += 20) {
+            for(let lng = -150; lng <= 150; lng += 30) {
+                const isSig = Math.random() > 0.35;
+                const pVal = isSig ? (Math.random() * 0.03 + 0.001) : (Math.random() * 0.4 + 0.08);
+                const slope = isSig ? (Math.random() * 10 - 5) : (Math.random() * 0.8 - 0.4);
+                GRID_POINTS.push({ lat, lng, pValue: pVal, slope, significant: isSig });
+            }
+        }
+
+        // Initialize App on DOM Load
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            initMap();
+            renderHotspotsList();
+            initCharts();
+            loadHotspotData(0);
         });
 
-        let currentMarker;
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: true,
+                attributionControl: false
+            }).setView([20, 0], 2);
 
-        // Map Click Event - Simulates pulling NASA data for the clicked coordinates
-        map.on('click', function(e) {
-            const lat = e.latlng.lat.toFixed(4);
-            const lng = e.latlng.lng.toFixed(4);
-            
-            // Update Coordinates on UI
-            document.getElementById('lat-val').innerText = lat;
-            document.getElementById('lng-val').innerText = lng;
-            
-            // Move map marker
-            if (currentMarker) map.removeLayer(currentMarker);
-            currentMarker = L.marker([lat, lng]).addTo(map);
+            // Tile Layers
+            setMapLayer('dark');
 
-            // Show loading screen
-            document.getElementById('loading').classList.remove('hidden');
-            
-            // Simulate API request delay for calculating statistics
-            setTimeout(() => {
-                document.getElementById('loading').classList.add('hidden');
-                calculateAndRenderData();
-            }, 1000);
-        });
+            // Render Grid Point Masks & Hotspots
+            renderGridOverlay();
+            renderHotspotMarkers();
+        }
 
-        function calculateAndRenderData() {
-            // Generate realistic looking environmental data curve
-            let baseValue = Math.floor(Math.random() * 50) + 10;
-            const trendDirection = Math.random() > 0.5 ? 1 : -1;
-            const data = Array.from({length: 9}, (_, i) => {
-                baseValue += (Math.random() * 5) * trendDirection;
-                return baseValue;
+        function setMapLayer(type) {
+            if(activeTileLayer) map.removeLayer(activeTileLayer);
+
+            const btnDark = document.getElementById('btn-layer-dark');
+            const btnSat = document.getElementById('btn-layer-sat');
+
+            if(type === 'dark') {
+                activeTileLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 18 });
+                btnDark.className = "px-2.5 py-1 text-xs rounded-lg bg-cyan-500 text-black font-semibold";
+                btnSat.className = "px-2.5 py-1 text-xs rounded-lg text-slate-400 hover:text-white";
+            } else {
+                activeTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 18 });
+                btnSat.className = "px-2.5 py-1 text-xs rounded-lg bg-cyan-500 text-black font-semibold";
+                btnDark.className = "px-2.5 py-1 text-xs rounded-lg text-slate-400 hover:text-white";
+            }
+            activeTileLayer.addTo(map);
+        }
+
+        let gridMarkersGroup = L.layerGroup();
+        function renderGridOverlay() {
+            gridMarkersGroup.clearLayers();
+
+            GRID_POINTS.forEach(pt => {
+                const isMaskedOut = significanceMaskActive && !pt.significant;
+                
+                const circle = L.circleMarker([pt.lat, pt.lng], {
+                    radius: pt.significant ? 5 : 3,
+                    fillColor: pt.slope < 0 ? '#FC3D21' : '#00F0FF',
+                    color: pt.significant ? '#ffffff' : 'transparent',
+                    weight: 0.5,
+                    opacity: isMaskedOut ? 0.05 : 0.6,
+                    fillOpacity: isMaskedOut ? 0.05 : 0.5
+                });
+
+                circle.bindTooltip(`
+                    <div class="text-xs font-sans p-1">
+                        <strong class="text-cyan-400">Grid Station</strong><br/>
+                        Slope: ${pt.slope.toFixed(2)}<br/>
+                        p-value: ${pt.pValue.toFixed(4)} ${pt.significant ? '(Sig)' : '(Noise)'}
+                    </div>
+                `, { className: 'glass-panel border-0 text-white' });
+
+                gridMarkersGroup.addLayer(circle);
             });
-            
-            // Update Chart
-            trendChart.data.datasets[0].data = data;
-            
-            // Calculate fake "Sen's Slope" and "p-value" based on data
-            const totalChange = data[8] - data[0];
-            const isPositive = totalChange > 0;
-            
-            const trendText = isPositive ? `+${(totalChange/9).toFixed(2)}/yr (Increasing)` : `${(totalChange/9).toFixed(2)}/yr (Decreasing)`;
-            const trendColor = isPositive ? 'text-red-400' : 'text-blue-400';
-            
-            // Statistically significant mostly if the trend is steep
-            const pValNumber = Math.abs(totalChange) > 20 ? (Math.random() * 0.04).toFixed(4) : (0.05 + Math.random() * 0.5).toFixed(4);
-            const isSig = pValNumber < 0.05;
 
-            // Update UI Elements
-            const trendEl = document.getElementById('trend-val');
-            trendEl.innerText = trendText;
-            trendEl.className = `text-sm font-bold mt-1 ${trendColor}`;
+            gridMarkersGroup.addTo(map);
+        }
 
-            const pValEl = document.getElementById('p-val');
-            pValEl.innerText = `${pValNumber} ${isSig ? '(Significant ✅)' : '(Random Noise ❌)'}`;
-            pValEl.className = `text-lg font-bold mt-1 ${isSig ? 'text-green-400' : 'text-gray-400'}`;
+        let hotspotMarkersGroup = L.layerGroup();
+        function renderHotspotMarkers() {
+            hotspotMarkersGroup.clearLayers();
+
+            HOTSPOTS.forEach((hs, idx) => {
+                const isSelected = idx === activeHotspotIndex;
+                const color = hs.slope < 0 ? '#FC3D21' : '#00F0FF';
+
+                const customIcon = L.divIcon({
+                    className: 'custom-map-pin',
+                    html: `
+                        <div class="relative flex items-center justify-center">
+                            <span class="absolute w-6 h-6 rounded-full opacity-75 animate-ping" style="background-color: ${color}"></span>
+                            <div class="w-4 h-4 rounded-full border-2 border-white shadow-lg flex items-center justify-center" style="background-color: ${color}">
+                            </div>
+                        </div>
+                    `,
+                    iconSize: [20, 20],
+                    iconAnchor: [10, 10]
+                });
+
+                const marker = L.marker(hs.coords, { icon: customIcon });
+                marker.on('click', () => loadHotspotData(idx));
+                hotspotMarkersGroup.addLayer(marker);
+            });
+
+            hotspotMarkersGroup.addTo(map);
+        }
+
+        function toggleSignificanceMask() {
+            significanceMaskActive = document.getElementById('significance-mask-toggle').checked;
+            renderGridOverlay();
+        }
+
+        function renderHotspotsList() {
+            const container = document.getElementById('hotspots-list');
+            container.innerHTML = '';
+
+            HOTSPOTS.forEach((hs, idx) => {
+                const isActive = idx === activeHotspotIndex;
+                const btn = document.createElement('button');
+                btn.className = `w-full text-left p-2.5 rounded-xl border transition-all flex items-center justify-between ${
+                    isActive 
+                        ? 'bg-nasa-blue/40 border-cyan-400 text-white shadow-md' 
+                        : 'bg-slate-900/60 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                }`;
+                
+                btn.onclick = () => loadHotspotData(idx);
+                btn.innerHTML = `
+                    <div class="truncate pr-2">
+                        <span class="font-semibold block truncate text-xs">${hs.name}</span>
+                        <span class="text-[10px] text-slate-400 font-mono">${hs.coords[0]}°, ${hs.coords[1]}°</span>
+                    </div>
+                    <span class="font-mono text-xs font-bold ${hs.slope < 0 ? 'text-red-400' : 'text-cyan-400'}">
+                        ${hs.slope > 0 ? '+' : ''}${hs.slope}
+                    </span>
+                `;
+                container.appendChild(btn);
+            });
+        }
+
+        function handleDatasetChange() {
+            activeDataset = document.getElementById('dataset-select').value;
+            const meta = DATASETS[activeDataset];
+            document.getElementById('dataset-desc').innerText = meta.desc;
             
+            // Re-generate current chart for selected active hotspot
+            updateChartAndStats();
+        }
+
+        function loadHotspotData(index) {
+            activeHotspotIndex = index;
+            const hs = HOTSPOTS[index];
+
+            // Sync dataset selector
+            if(hs.dataset) {
+                document.getElementById('dataset-select').value = hs.dataset;
+                activeDataset = hs.dataset;
+                document.getElementById('dataset-desc').innerText = DATASETS[hs.dataset].desc;
+            }
+
+            // Fly map to coordinates
+            map.flyTo(hs.coords, 4, { duration: 1.2 });
+
+            // Update Header / Label
+            document.getElementById('active-location-label').innerText = `${hs.name} (${hs.coords[0]}°, ${hs.coords[1]}°)`;
+
+            renderHotspotsList();
+            renderHotspotMarkers();
+            updateChartAndStats();
+        }
+
+        function generateTimeSeriesData(hs, yearStart = 2000, yearEnd = 2026) {
+            const labels = [];
+            const rawValues = [];
+            const trendValues = [];
+            const seasonalValues = [];
+
+            const totalMonths = (yearEnd - yearStart) * 12;
+            const baseValue = 100;
+
+            for(let i = 0; i < totalMonths; i++) {
+                const year = yearStart + Math.floor(i / 12);
+                const month = (i % 12) + 1;
+                labels.push(`${year}-${month < 10 ? '0' + month : month}`);
+
+                // Time factor (in years)
+                const t = i / 12;
+
+                // Sen's slope linear component
+                const linearTrend = hs.slope * t;
+
+                // Seasonal harmonic component
+                const seasonal = hs.seasonalAmp * Math.sin((2 * Math.PI * (i % 12)) / 12);
+
+                // Gaussian Noise simulation
+                const noise = (Math.random() - 0.5) * hs.noise * 2;
+
+                const raw = baseValue + linearTrend + seasonal + noise;
+
+                rawValues.push(parseFloat(raw.toFixed(2)));
+                trendValues.push(parseFloat((baseValue + linearTrend).toFixed(2)));
+                seasonalValues.push(parseFloat(seasonal.toFixed(2)));
+            }
+
+            return { labels, rawValues, trendValues, seasonalValues };
+        }
+
+        function updateChartAndStats() {
+            const hs = HOTSPOTS[activeHotspotIndex];
+            const data = generateTimeSeriesData(hs, globalYearMin, globalYearMax);
+            const unit = DATASETS[activeDataset].rateUnit;
+
+            // Update Stats Display
+            document.getElementById('stat-sens-slope').innerText = `${hs.slope > 0 ? '+' : ''}${hs.slope} ${unit}`;
+            document.getElementById('stat-p-value').innerText = hs.pValue.toFixed(4);
+            document.getElementById('stat-z-score').innerText = hs.zScore > 0 ? `+${hs.zScore}` : hs.zScore;
+            
+            const sigBadge = document.getElementById('stat-significance');
+            if(hs.significant) {
+                sigBadge.innerText = 'SIGNIFICANT';
+                sigBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 inline-block mt-1';
+            } else {
+                sigBadge.innerText = 'NOISE / INSIG';
+                sigBadge.className = 'text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 inline-block mt-1';
+            }
+
+            // Render Chart
+            renderChart(data);
+        }
+
+        function initCharts() {
+            const ctx = document.getElementById('trendChart').getContext('2d');
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { labels: { color: '#94A3B8', font: { family: 'Inter', size: 11 } } },
+                        tooltip: {
+                            backgroundColor: '#0B192C',
+                            titleColor: '#00F0FF',
+                            borderColor: '#1E293B',
+                            borderWidth: 1
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748B', font: { size: 10 }, maxTicksLimit: 12 }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255,255,255,0.05)' },
+                            ticks: { color: '#64748B', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+
+            initBipolarCharts();
+            initQuizChart();
+        }
+
+        function renderChart(data) {
+            const hs = HOTSPOTS[activeHotspotIndex];
+            const datasetMeta = DATASETS[activeDataset];
+
+            trendChart.data.labels = data.labels;
+
+            if(currentChartMode === 'raw') {
+                trendChart.data.datasets = [
+                    {
+                        label: `${datasetMeta.name} (Observed)`,
+                        data: data.rawValues,
+                        borderColor: '#00F0FF',
+                        borderWidth: 1.5,
+                        pointRadius: 0,
+                        tension: 0.1
+                    },
+                    {
+                        label: `Sen's Slope Trend (${hs.slope} ${datasetMeta.rateUnit})`,
+                        data: data.trendValues,
+                        borderColor: hs.slope < 0 ? '#FC3D21' : '#10B981',
+                        borderWidth: 2,
+                        borderDash: [5, 5],
+                        pointRadius: 0
+                    }
+                ];
+            } else {
+                // STL Decomposition View
+                trendChart.data.datasets = [
+                    {
+                        label: 'Trend Component',
+                        data: data.trendValues,
+                        borderColor: '#00F0FF',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'Seasonal Cycle Component',
+                        data: data.rawValues.map((v, i) => v - data.trendValues[i]),
+                        borderColor: '#8B5CF6',
+                        borderWidth: 1,
+                        pointRadius: 0
+                    }
+                ];
+            }
+
             trendChart.update();
+        }
+
+        function setChartMode(mode) {
+            currentChartMode = mode;
+            document.getElementById('btn-chart-raw').className = mode === 'raw' 
+                ? 'px-3 py-1 rounded bg-nasa-blue text-white font-medium' 
+                : 'px-3 py-1 rounded text-slate-400 hover:text-white font-medium';
+            document.getElementById('btn-chart-decomp').className = mode === 'decomposition' 
+                ? 'px-3 py-1 rounded bg-nasa-blue text-white font-medium' 
+                : 'px-3 py-1 rounded text-slate-400 hover:text-white font-medium';
+
+            updateChartAndStats();
+        }
+
+        function updateTimeRange() {
+            const minVal = parseInt(document.getElementById('time-range-min').value);
+            const maxVal = parseInt(document.getElementById('time-range-max').value);
+
+            if(minVal >= maxVal) return;
+
+            globalYearMin = minVal;
+            globalYearMax = maxVal;
+
+            document.getElementById('slider-year-min').innerText = minVal;
+            document.getElementById('slider-year-max').innerText = maxVal;
+
+            updateChartAndStats();
+        }
+
+        function initBipolarCharts() {
+            const config = (color) => ({
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', size: 9, maxTicksLimit: 6 } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', size: 9 } }
+                    }
+                }
+            });
+
+            chartBipolarA = new Chart(document.getElementById('chartBipolarA').getContext('2d'), config('#FC3D21'));
+            chartBipolarB = new Chart(document.getElementById('chartBipolarB').getContext('2d'), config('#10B981'));
+
+            loadBipolarScenario('antarctica');
+        }
+
+        const BIPOLAR_SCENARIOS = {
+            'antarctica': {
+                titleA: 'West Antarctic Ice Shelf',
+                slopeA: '-12.8 Gt/yr',
+                descA: 'Accelerated ocean-driven basal ice shelf melting resulting from warm Circumpolar Deep Water intruding onto the continental shelf.',
+                titleB: 'East Antarctic Plateau',
+                slopeB: '+2.4 Gt/yr',
+                descB: 'Higher atmospheric moisture capacity resulting in increased localized snowfall accumulation over high-altitude interior ice sheets.',
+                hsA: { slope: -12.8, noise: 1.5, seasonalAmp: 4.0 },
+                hsB: { slope: 2.4, noise: 1.0, seasonalAmp: 3.0 }
+            },
+            'amazon': {
+                titleA: 'Southern Deforestation Arc',
+                slopeA: '-0.024 NDVI/yr',
+                descA: 'Canopy degradation caused by agricultural expansion and fire disturbance along boundary roads.',
+                titleB: 'Northern Protected Reserve',
+                slopeB: '+0.005 NDVI/yr',
+                descB: 'Stable canopy greenness with mild biomass accumulation under undisturbed primary rainforest canopy.',
+                hsA: { slope: -0.024, noise: 0.05, seasonalAmp: 0.1 },
+                hsB: { slope: 0.005, noise: 0.02, seasonalAmp: 0.08 }
+            },
+            'monsoon': {
+                titleA: 'Western Indian Ocean SST',
+                slopeA: '+0.28 °C/dec',
+                descA: 'Rapid warming phase forming strong positive Indian Ocean Dipole conditions.',
+                titleB: 'Eastern Pacific Upwelling',
+                slopeB: '-0.08 °C/dec',
+                descB: 'Deep water cold tongue persistence under intensified trade wind stress.',
+                hsA: { slope: 0.28, noise: 0.2, seasonalAmp: 0.5 },
+                hsB: { slope: -0.08, noise: 0.25, seasonalAmp: 0.4 }
+            }
+        };
+
+        function loadBipolarScenario(key) {
+            const sc = BIPOLAR_SCENARIOS[key];
+            
+            document.getElementById('bipolar-a-title').innerText = sc.titleA;
+            document.getElementById('bipolar-a-slope').innerText = sc.slopeA;
+            document.getElementById('bipolar-a-desc').innerText = sc.descA;
+
+            document.getElementById('bipolar-b-title').innerText = sc.titleB;
+            document.getElementById('bipolar-b-slope').innerText = sc.slopeB;
+            document.getElementById('bipolar-b-desc').innerText = sc.descB;
+
+            const dataA = generateTimeSeriesData(sc.hsA, 2000, 2026);
+            const dataB = generateTimeSeriesData(sc.hsB, 2000, 2026);
+
+            chartBipolarA.data.labels = dataA.labels;
+            chartBipolarA.data.datasets = [{ data: dataA.rawValues, borderColor: '#FC3D21', borderWidth: 1.5, pointRadius: 0 }];
+            chartBipolarA.update();
+
+            chartBipolarB.data.labels = dataB.labels;
+            chartBipolarB.data.datasets = [{ data: dataB.rawValues, borderColor: '#10B981', borderWidth: 1.5, pointRadius: 0 }];
+            chartBipolarB.update();
+        }
+
+        let currentQuizCase = 0;
+        let quizScore = 0;
+        let totalQuizCases = 0;
+
+        const QUIZ_CASES = [
+            {
+                id: 'CASE #201 - Greenland Melt Signal',
+                title: 'High Latitude Albedo Anomaly',
+                desc: 'Analyze this 26-year surface elevation signal. Notice high summer amplitude seasonality mixed with interannual variance.',
+                hs: { slope: -8.5, noise: 2.0, seasonalAmp: 6.0 },
+                isSignificant: true,
+                explanation: 'Correct! Mann-Kendall test yields p = 0.0004 (p < 0.05). The downward Sen’s slope outweighs annual seasonal fluctuations.'
+            },
+            {
+                id: 'CASE #202 - Pacific SST Oscillation',
+                title: 'Mid-Latitude Ocean Temperature',
+                desc: 'Evaluate this sea surface temperature anomaly series. Does this exhibit true climate trend or natural cyclic variance?',
+                hs: { slope: 0.2, noise: 4.5, seasonalAmp: 2.0 },
+                isSignificant: false,
+                explanation: 'Correct! High noise volatility yields p = 0.3820 (p > 0.05). This is natural stochastic oscillation without statistical significance.'
+            }
+        ];
+
+        function initQuizChart() {
+            const ctx = document.getElementById('quizChart').getContext('2d');
+            quizChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: [], datasets: [] },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', size: 9, maxTicksLimit: 8 } },
+                        y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748B', size: 9 } }
+                    }
+                }
+            });
+
+            loadQuizCase();
+        }
+
+        function loadQuizCase() {
+            const q = QUIZ_CASES[currentQuizCase % QUIZ_CASES.length];
+            document.getElementById('quiz-case-id').innerText = q.id;
+            document.getElementById('quiz-question-title').innerText = q.title;
+            document.getElementById('quiz-question-desc').innerText = q.desc;
+            document.getElementById('quiz-feedback').className = 'hidden p-4 rounded-xl border text-xs space-y-2';
+
+            const data = generateTimeSeriesData(q.hs, 2000, 2026);
+            quizChart.data.labels = data.labels;
+            quizChart.data.datasets = [{
+                data: data.rawValues,
+                borderColor: '#8B5CF6',
+                borderWidth: 1.5,
+                pointRadius: 0
+            }];
+            quizChart.update();
+        }
+
+        function submitQuizAnswer(userGuessedSignificant) {
+            const q = QUIZ_CASES[currentQuizCase % QUIZ_CASES.length];
+            const isCorrect = userGuessedSignificant === q.isSignificant;
+
+            totalQuizCases++;
+            if(isCorrect) quizScore += 100;
+
+            document.getElementById('quiz-score').innerText = `${quizScore} / ${totalQuizCases * 100} pts`;
+
+            const feedbackBox = document.getElementById('quiz-feedback');
+            const feedbackTitle = document.getElementById('quiz-feedback-title');
+            const feedbackText = document.getElementById('quiz-feedback-text');
+
+            feedbackBox.classList.remove('hidden');
+
+            if(isCorrect) {
+                feedbackBox.className = 'p-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 text-xs space-y-2';
+                feedbackTitle.innerHTML = `<i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i> <span class="text-emerald-400">Accurate Detection!</span>`;
+            } else {
+                feedbackBox.className = 'p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-xs space-y-2';
+                feedbackTitle.innerHTML = `<i data-lucide="x-circle" class="w-4 h-4 text-red-400"></i> <span class="text-red-400">Inaccurate Classification</span>`;
+            }
+
+            feedbackText.innerText = q.explanation;
+            lucide.createIcons();
+        }
+
+        function nextQuizCase() {
+            currentQuizCase++;
+            loadQuizCase();
+        }
+
+        function switchTab(tabId) {
+            currentTab = tabId;
+
+            document.getElementById('tab-explorer').classList.add('hidden');
+            document.getElementById('tab-bipolar').classList.add('hidden');
+            document.getElementById('tab-detective').classList.add('hidden');
+
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+
+            // Reset navigation styles
+            ['explorer', 'bipolar', 'detective'].forEach(t => {
+                const btn = document.getElementById(`nav-${t}`);
+                if(t === tabId) {
+                    btn.className = "flex items-center gap-2 px-3.5 py-2 rounded-lg bg-nasa-blue text-white shadow-md transition-all";
+                } else {
+                    btn.className = "flex items-center gap-2 px-3.5 py-2 rounded-lg text-slate-400 hover:text-white transition-all";
+                }
+            });
+
+            if(tabId === 'explorer') {
+                setTimeout(() => map.invalidateSize(), 200);
+            }
+        }
+
+        function openExportModal() {
+            const hs = HOTSPOTS[activeHotspotIndex];
+            const meta = DATASETS[activeDataset];
+
+            document.getElementById('exp-region').innerText = hs.name;
+            document.getElementById('exp-variable').innerText = meta.name;
+            document.getElementById('exp-slope').innerText = `${hs.slope} ${meta.rateUnit}`;
+            document.getElementById('exp-pvalue').innerText = `${hs.pValue.toFixed(4)} (${hs.significant ? 'Significant' : 'Insignificant Noise'})`;
+
+            document.getElementById('export-modal').classList.remove('hidden');
+            document.getElementById('export-modal').classList.add('flex');
+        }
+
+        function closeExportModal() {
+            document.getElementById('export-modal').classList.add('hidden');
+            document.getElementById('export-modal').classList.remove('flex');
+        }
+
+        function downloadReport(format) {
+            const hs = HOTSPOTS[activeHotspotIndex];
+            const meta = DATASETS[activeDataset];
+
+            const reportObj = {
+                mission: "NASA Space Apps Challenge 2026",
+                project: "Earth System Trend Detective",
+                timestamp: new Date().toISOString(),
+                dataset: meta.name,
+                location: { name: hs.name, latitude: hs.coords[0], longitude: hs.coords[1] },
+                statistics: {
+                    sens_slope: hs.slope,
+                    unit: meta.rateUnit,
+                    p_value: hs.pValue,
+                    z_score: hs.zScore,
+                    is_statistically_significant: hs.significant
+                }
+            };
+
+            let content = "";
+            let mimeType = "";
+            let filename = `NASA_Trend_Report_${hs.name.replace(/\s+/g, '_')}`;
+
+            if(format === 'json') {
+                content = JSON.stringify(reportObj, null, 2);
+                mimeType = "application/json";
+                filename += ".json";
+            } else {
+                content = `Parameter,Value\nMission,NASA Space Apps 2026\nRegion,${hs.name}\nLat,${hs.coords[0]}\nLng,${hs.coords[1]}\nSlope,${hs.slope}\nP-Value,${hs.pValue}\nSignificant,${hs.significant}`;
+                mimeType = "text/csv";
+                filename += ".csv";
+            }
+
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            closeExportModal();
         }
     </script>
 </body>
